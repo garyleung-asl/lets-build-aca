@@ -8,7 +8,7 @@ param logAnalyticsWorkspaceName string
 param appInsightsName string
 
 @description('The name of the Container App Environment')
-param containerAppEnvironmentName string
+param containerAppEnvName string
 
 var containerAppName = 'hello-world'
 
@@ -32,7 +32,7 @@ resource appInsights 'microsoft.insights/components@2020-02-02' = {
 }
 
 resource env 'Microsoft.App/managedEnvironments@2023-08-01-preview' = {
-  name: containerAppEnvironmentName
+  name: containerAppEnvName
   location: location
   properties: {
     appLogsConfiguration: {
