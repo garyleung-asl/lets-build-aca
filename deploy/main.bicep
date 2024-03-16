@@ -10,10 +10,21 @@ param appInsightsName string
 @description('The name of the Container App Environment')
 param containerAppEnvName string
 
+@description('The name of the Container Registry')
+param containerRegistryName string
+
 var containerAppName = 'hello-world'
+var acrPullRoleId = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')
+
+var tags = {
+  environment: 'production'
+  owner: 'Will Velida'
+  application: 'lets-build-aca'
+}
 
 resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
   name: logAnalyticsWorkspaceName
+  tags: tags
   location: location
   properties: {
     sku: {
@@ -24,6 +35,7 @@ resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
 
 resource appInsights 'microsoft.insights/components@2020-02-02' = {
   name: appInsightsName
+  tags: tags
   location: location
   kind: 'web'
   properties: {
@@ -31,8 +43,34 @@ resource appInsights 'microsoft.insights/components@2020-02-02' = {
   }
 }
 
+resource acr 'Microsoft.ContainerRegistry/registries@2023-11-01-preview' = {
+  name: containerRegistryName
+  tags: tags
+  location: location
+  sku: {
+    name: 'Basic'
+  }
+  properties: {
+    adminUserEnabled: true
+  }
+  identity: {
+    type: 'SystemAssigned'
+  }
+}
+
+resource acrPullRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(acr.id, containerApp.id, acrPullRoleId)
+  scope: acr
+  properties: {
+    principalId: containerApp.identity.principalId
+    roleDefinitionId: acrPullRoleId
+    principalType: 'ServicePrincipal'
+  }
+}
+
 resource env 'Microsoft.App/managedEnvironments@2023-08-01-preview' = {
   name: containerAppEnvName
+  tags: tags
   location: location
   properties: {
     appLogsConfiguration: {
@@ -47,6 +85,7 @@ resource env 'Microsoft.App/managedEnvironments@2023-08-01-preview' = {
 
 resource containerApp 'Microsoft.App/containerApps@2023-08-01-preview' = {
   name: containerAppName
+  tags: tags
   location: location
   properties: {
     managedEnvironmentId: env.id
@@ -62,12 +101,30 @@ resource containerApp 'Microsoft.App/containerApps@2023-08-01-preview' = {
           }
         ]
       }
+      registries: [
+        {
+          server: acr.properties.loginServer
+          username: acr.listCredentials().username
+          identity: 'system'
+        }
+      ]
+      activeRevisionsMode: 'Multiple'
     }
     template: {
       containers: [
         {
           name: containerAppName
           image: 'mcr.microsoft.com/k8se/quickstart:latest'
+          env: [
+            {
+              name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
+              value: appInsights.properties.InstrumentationKey
+            }
+            {
+              name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+              value: appInsights.properties.ConnectionString
+            }
+          ]
           resources: {
             cpu: json('1.0')
             memory: '2Gi'
@@ -77,7 +134,20 @@ resource containerApp 'Microsoft.App/containerApps@2023-08-01-preview' = {
       scale: {
         minReplicas: 0
         maxReplicas: 3
+        rules: [
+          {
+            name: 'http-rule'
+            http: {
+              metadata: {
+                concurrentRequests: '100'
+              }
+            }
+          }
+        ]
       }
     }
+  }
+  identity: {
+    type: 'SystemAssigned'
   }
 }
