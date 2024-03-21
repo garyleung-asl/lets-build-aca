@@ -47,15 +47,15 @@ jobs:
             - name: Get ACR name
               id: getacrname
               run: |
-                acrName=$(az acr list --resource-group ${{ secrets.AZURE_RG }} --query "[0].name" -o tsv)
+                acrName=$(az acr list --resource-group ${{ secrets.AZURE_RG_NAME }} --query "[0].name" -o tsv)
                 echo "::set-output name=acrName::$acrName"
                   
             - name: Get ACR Credentials
               id: getacrcreds
               run: |
-                loginServer=$(az acr list --resource-group ${{ secrets.AZURE_RG }} --query "[0].loginServer" -o tsv)
-                loginName=$(az acr credential show -n ${{ steps.getacrname.outputs.acrName }} --resource-group ${{ secrets.AZURE_RG }} --query username -o tsv)
-                password=$(az acr credential show -n ${{ steps.getacrname.outputs.acrName }} --resource-group ${{ secrets.AZURE_RG }} --query "passwords[0].value" -o tsv)
+                loginServer=$(az acr list --resource-group ${{ secrets.AZURE_RG_NAME }} --query "[0].loginServer" -o tsv)
+                loginName=$(az acr credential show -n ${{ steps.getacrname.outputs.acrName }} --resource-group ${{ secrets.AZURE_RG_NAME }} --query username -o tsv)
+                password=$(az acr credential show -n ${{ steps.getacrname.outputs.acrName }} --resource-group ${{ secrets.AZURE_RG_NAME }} --query "passwords[0].value" -o tsv)
                 echo "::set-output name=loginServer::$loginServer"
                 echo "::set-output name=loginName::$loginName"
                 echo "::set-output name=password::$password"
@@ -91,14 +91,14 @@ jobs:
             - name: Get ACR Login Server
               id: getacrserver
               run: |
-                loginServer=$(az acr list --resource-group ${{ secrets.AZURE_RG }} --query "[0].loginServer" -o tsv)
+                loginServer=$(az acr list --resource-group ${{ secrets.AZURE_RG_NAME }} --query "[0].loginServer" -o tsv)
                 echo "::set-output name=loginServer::$loginServer"
             
             - name: Get current revision name
               id: getcurrentrevisionname
               run: |
                 az extension add -n containerapp --yes
-                currentRevision=$(az containerapp revision list -g ${{ secrets.AZURE_RG }} -n store-product-api --query 'reverse(sort_by([].{Revision:name,Replicas:properties.replicas,Active:properties.active,Created:properties.createdTime,FQDN:properties.fqdn}[?Active!=`false`], &Created))| [0].Revision' -o tsv)
+                currentRevision=$(az containerapp revision list -g ${{ secrets.AZURE_RG_NAME }} -n store-product-api --query 'reverse(sort_by([].{Revision:name,Replicas:properties.replicas,Active:properties.active,Created:properties.createdTime,FQDN:properties.fqdn}[?Active!=`false`], &Created))| [0].Revision' -o tsv)
                 echo "::set-output name=currentRevision::$currentRevision"
             
             - name: 'Deploy to Blue Slot'
@@ -108,15 +108,15 @@ jobs:
                     echo "Installing containerapp extension"
                     az extension add -n containerapp --yes
                     echo "Creating Blue Slot"
-                    az containerapp revision copy -n hello-world -g ${{ secrets.AZURE_RG }} -i ${{ steps.getacrserver.outputs.loginServer }}/productapi:${{ github.sha }}
-                    az containerapp ingress traffic set -n hello-world -g ${{ secrets.AZURE_RG }} --revision-weight ${{ steps.getcurrentrevisionname.outputs.currentRevision }}=100
+                    az containerapp revision copy -n hello-world -g ${{ secrets.AZURE_RG_NAME }} -i ${{ steps.getacrserver.outputs.loginServer }}/productapi:${{ github.sha }}
+                    az containerapp ingress traffic set -n hello-world -g ${{ secrets.AZURE_RG_NAME }} --revision-weight ${{ steps.getcurrentrevisionname.outputs.currentRevision }}=100
                   
             - name: 'Get Blue Slot URL'
               id: getbluesloturl
               run: |
                 echo "Installing containerapp extension"
                 az extension add -n containerapp --yes
-                bluesloturl=$(az containerapp revision list -g ${{ secrets.AZURE_RG }} -n hello-world --query 'reverse(sort_by([].{Revision:name,Replicas:properties.replicas,Active:properties.active,Created:properties.createdTime,FQDN:properties.fqdn}[?Active!=`false`], &Created))| [0].FQDN' -o tsv)
+                bluesloturl=$(az containerapp revision list -g ${{ secrets.AZURE_RG_NAME }} -n hello-world --query 'reverse(sort_by([].{Revision:name,Replicas:properties.replicas,Active:properties.active,Created:properties.createdTime,FQDN:properties.fqdn}[?Active!=`false`], &Created))| [0].FQDN' -o tsv)
                 echo "::set-output name=bluesloturl::$bluesloturl"
             
     promote-to-green:
@@ -137,14 +137,14 @@ jobs:
             - name: Get ACR Login Server
               id: getacrserver
               run: |
-                    loginServer=$(az acr list --resource-group ${{ secrets.AZURE_RG }} --query "[0].loginServer" -o tsv)
+                    loginServer=$(az acr list --resource-group ${{ secrets.AZURE_RG_NAME }} --query "[0].loginServer" -o tsv)
                     echo "::set-output name=loginServer::$loginServer"
             
             - name: Get blue slot
               id: getblueslot
               run: |
                 az extension add -n containerapp --yes
-                blueSlot=$(az containerapp revision list -g ${{ secrets.AZURE_RG }} -n hello-world --query 'reverse(sort_by([].{Revision:name,Replicas:properties.replicas,Active:properties.active,Created:properties.createdTime,FQDN:properties.fqdn}[?Active!=`false`], &Created))| [0].Revision' -o tsv)
+                blueSlot=$(az containerapp revision list -g ${{ secrets.AZURE_RG_NAME }} -n hello-world --query 'reverse(sort_by([].{Revision:name,Replicas:properties.replicas,Active:properties.active,Created:properties.createdTime,FQDN:properties.fqdn}[?Active!=`false`], &Created))| [0].Revision' -o tsv)
                 echo "::set-output name=blueSlot::$blueSlot"
             
             - name: Promote blue to green slot
@@ -154,4 +154,4 @@ jobs:
                     echo "Installing containerapp extension"
                     az extension add -n containerapp --yes
                     echo "Promoting Blue Slot to Green Slot"
-                    az containerapp ingress traffic set -n hello-world -g ${{ secrets.AZURE_RG }} --revision-weight ${{ steps.getblueslot.outputs.blueSlot }}=100
+                    az containerapp ingress traffic set -n hello-world -g ${{ secrets.AZURE_RG_NAME }} --revision-weight ${{ steps.getblueslot.outputs.blueSlot }}=100
