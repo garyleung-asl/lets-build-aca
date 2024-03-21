@@ -3,9 +3,6 @@ name: Deploy Infra
 
 # Controls when the workflow will run
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 permissions:
