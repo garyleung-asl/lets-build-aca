@@ -2,7 +2,7 @@
 name: Deploy UI
 
 env:
-    DOTNET_VERSION: '8.0.x'
+    DOTNET_VERSION: '6.0.x'
 
 # Controls when the workflow will run
 on:
