@@ -98,7 +98,7 @@ jobs:
               id: getcurrentrevisionname
               run: |
                 az extension add -n containerapp --yes
-                currentRevision=$(az containerapp revision list -g ${{ secrets.AZURE_RG_NAME }} -n store-product-api --query 'reverse(sort_by([].{Revision:name,Replicas:properties.replicas,Active:properties.active,Created:properties.createdTime,FQDN:properties.fqdn}[?Active!=`false`], &Created))| [0].Revision' -o tsv)
+                currentRevision=$(az containerapp revision list -g ${{ secrets.AZURE_RG_NAME }} -n hello-world --query 'reverse(sort_by([].{Revision:name,Replicas:properties.replicas,Active:properties.active,Created:properties.createdTime,FQDN:properties.fqdn}[?Active!=`false`], &Created))| [0].Revision' -o tsv)
                 echo "::set-output name=currentRevision::$currentRevision"
             
             - name: 'Deploy to Blue Slot'
