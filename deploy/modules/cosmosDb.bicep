@@ -76,3 +76,5 @@ resource cosmosDbPrimaryMasterKeySecret 'Microsoft.KeyVault/vaults/secrets@2022-
     value: cosmosDbAccount.listKeys().primaryMasterKey
   }
 }
+
+output cosmosDbName string = cosmosDbAccount.name

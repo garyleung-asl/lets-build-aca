@@ -72,6 +72,11 @@ resource containerApp 'Microsoft.App/containerApps@2023-08-01-preview' = {
           name: 'cosmos-db-connection-string'
           value: cosmosDbAccount.listConnectionStrings().connectionStrings[0].connectionString
         }
+        {
+          name: 'cosmos-db-endpoint'
+          keyVaultUrl: '${keyVault.properties.vaultUri}/secrets/CosmosDbEndpoint'
+          identity: 'system'
+        }
       ]
       activeRevisionsMode: 'Multiple'
     }
