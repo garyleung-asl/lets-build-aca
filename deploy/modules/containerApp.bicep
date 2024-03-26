@@ -21,6 +21,7 @@ param cosmosDbAccountName string
 
 var containerAppName = 'hello-world'
 var acrPullRoleId = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')
+var keyVaultSecretUserRoleId = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6')
 
 resource env 'Microsoft.App/managedEnvironments@2023-11-02-preview' existing = {
   name: containerAppEnvName
@@ -74,9 +75,9 @@ resource containerApp 'Microsoft.App/containerApps@2023-08-01-preview' = {
         }
         {
           name: 'cosmos-db-endpoint'
-          keyVaultUrl: 'https://${keyVault.name}.vault.azure.net/secrets/CosmosDbEndpoint'
           identity: 'system'
-        }
+          keyVaultUrl: 'https://${keyVault.properties.vaultUri}/secrets/CosmosDbEndpoint'
+        }      
       ]
       activeRevisionsMode: 'Multiple'
     }
@@ -130,22 +131,13 @@ resource containerApp 'Microsoft.App/containerApps@2023-08-01-preview' = {
   }
 }
 
-resource accessPolicies 'Microsoft.KeyVault/vaults/accessPolicies@2023-07-01' = {
-  name: 'add'
-  parent: keyVault
+resource keyVaultSecretUserRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(containerApp.id, keyVaultSecretUserRoleId)
+  scope: keyVault
   properties: {
-    accessPolicies: [
-      {
-        objectId: containerApp.identity.principalId
-        tenantId: containerApp.identity.tenantId
-        permissions: {
-          secrets: [
-            'get'
-            'list'
-          ]
-        }
-      }
-    ] 
+    principalId: containerApp.identity.principalId
+    roleDefinitionId: keyVaultSecretUserRoleId
+    principalType: 'ServicePrincipal'
   }
 }
 
