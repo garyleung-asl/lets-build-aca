@@ -13,6 +13,9 @@ param containerAppEnvName string
 @description('The name of the Container Registry')
 param containerRegistryName string
 
+@description('The name of the Key Vault')
+param keyVaultName string
+
 var containerAppName = 'hello-world'
 var acrPullRoleId = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')
 
@@ -83,6 +86,24 @@ resource env 'Microsoft.App/managedEnvironments@2023-08-01-preview' = {
   }
 }
 
+resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
+  name: keyVaultName
+  location: location
+  properties: {
+    sku: {
+      family: 'A'
+      name: 'standard'
+    }
+    tenantId: subscription().tenantId
+    enableSoftDelete: true
+    softDeleteRetentionInDays: 7
+    enabledForTemplateDeployment: true
+    accessPolicies: [
+      
+    ]
+  }
+}
+
 resource containerApp 'Microsoft.App/containerApps@2023-08-01-preview' = {
   name: containerAppName
   tags: tags
@@ -149,5 +170,24 @@ resource containerApp 'Microsoft.App/containerApps@2023-08-01-preview' = {
   }
   identity: {
     type: 'SystemAssigned'
+  }
+}
+
+resource accessPolicies 'Microsoft.KeyVault/vaults/accessPolicies@2023-07-01' = {
+  name: 'add'
+  parent: keyVault
+  properties: {
+    accessPolicies: [
+      {
+        objectId: containerApp.identity.principalId
+        tenantId: containerApp.identity.tenantId
+        permissions: {
+          secrets: [
+            'get'
+            'list'
+          ]
+        }
+      }
+    ] 
   }
 }
