@@ -75,7 +75,7 @@ resource containerApp 'Microsoft.App/containerApps@2023-08-01-preview' = {
         }
         {
           name: 'cosmos-db-connection-string-kv'
-          keyVaultUrl: 'https://${keyVault.properties.vaultUri}/secrets/CosmosDbConnectionString'
+          keyVaultUrl: 'https://${keyVault.name}.vault.azure.net/secrets/CosmosDbConnectionString/cb665c0332104b90b9d82e48d5ea7cc1'
           identity: 'system'
         }  
       ]
