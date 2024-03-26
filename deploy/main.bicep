@@ -13,11 +13,18 @@ param containerAppEnvName string
 @description('The name of the Container Registry')
 param containerRegistryName string
 
+@description('The name of the Cosmos DB account that will be deployed')
+param cosmosDbAccountName string
+
 @description('The name of the Key Vault')
 param keyVaultName string
 
 var containerAppName = 'hello-world'
 var acrPullRoleId = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')
+var databaseName = 'todoDB'
+var cosmosConnectionStringSecretName = 'CosmosDbConnectionString'
+var cosmosDbEndpointSecretName = 'CosmosDbEndpoint'
+var cosmosPrimaryMasterKeySecretName = 'CosmosDbPrimaryMasterKey'
 
 var tags = {
   environment: 'production'
@@ -89,6 +96,7 @@ resource env 'Microsoft.App/managedEnvironments@2023-08-01-preview' = {
 resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
   name: keyVaultName
   location: location
+  tags: tags
   properties: {
     sku: {
       family: 'A'
@@ -138,6 +146,12 @@ resource containerApp 'Microsoft.App/containerApps@2023-08-01-preview' = {
           identity: 'system'
         }
       ]
+      secrets: [
+        {
+          name: 'cosmos-db-connection-string'
+          value: cosmosDbAccount.listConnectionStrings().connectionStrings[0].connectionString
+        }
+      ]
       activeRevisionsMode: 'Multiple'
     }
     template: {
@@ -179,5 +193,63 @@ resource containerApp 'Microsoft.App/containerApps@2023-08-01-preview' = {
   }
   identity: {
     type: 'SystemAssigned'
+  }
+}
+
+resource cosmosDbAccount 'Microsoft.DocumentDB/databaseAccounts@2024-02-15-preview' = {
+  name: cosmosDbAccountName
+  location: location
+  tags: tags
+  properties: {
+    databaseAccountOfferType: 'Standard'
+    locations: [
+      {
+        locationName: location
+      }
+    ]
+    consistencyPolicy: {
+      defaultConsistencyLevel: 'Session'
+    }
+    enableFreeTier: true
+  }
+  identity: {
+    type: 'SystemAssigned'
+  }
+}
+
+resource database 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases@2024-02-15-preview' = {
+  name: databaseName
+  parent: cosmosDbAccount
+  properties: {
+    resource: {
+      id: databaseName
+    }
+    options: {
+      throughput: 1000
+    }
+  }
+}
+
+resource cosmosDbConnectionStringSecret 'Microsoft.KeyVault/vaults/secrets@2022-07-01' = {
+  name: cosmosConnectionStringSecretName
+  parent: keyVault
+  properties: {
+    value: cosmosDbAccount.listConnectionStrings().connectionStrings[0].connectionString
+  }
+}
+
+resource cosmosDbEndpointSecret 'Microsoft.KeyVault/vaults/secrets@2022-07-01' = {
+  name: cosmosDbEndpointSecretName
+  parent: keyVault
+  properties: {
+    value: cosmosDbAccount.properties.documentEndpoint
+  }
+}
+
+resource cosmosDbPrimaryMasterKeySecret 'Microsoft.KeyVault/vaults/secrets@2022-07-01' = {
+  name: cosmosPrimaryMasterKeySecretName
+  parent: keyVault
+  properties: {
+    value: cosmosDbAccount.listKeys().primaryMasterKey
   }
 }
