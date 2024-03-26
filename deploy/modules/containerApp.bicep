@@ -22,7 +22,6 @@ param cosmosDbAccountName string
 var containerAppName = 'hello-world'
 var acrPullRoleId = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')
 var keyVaultSecretUserRoleId = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6')
-var cosmosConnectionStringSecretName = 'CosmosDbConnectionString'
 
 resource env 'Microsoft.App/managedEnvironments@2023-11-02-preview' existing = {
   name: containerAppEnvName
@@ -34,10 +33,6 @@ resource acr 'Microsoft.ContainerRegistry/registries@2023-11-01-preview' existin
 
 resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' existing =  {
   name: keyVaultName
-}
-
-resource cosmosSecretName 'Microsoft.KeyVault/vaults/secrets@2023-07-01' existing = {
-  name: cosmosConnectionStringSecretName
 }
 
 resource appInsights 'Microsoft.Insights/components@2020-02-02' existing = {
@@ -80,7 +75,7 @@ resource containerApp 'Microsoft.App/containerApps@2023-08-01-preview' = {
         }
         {
           name: 'cosmos-db-connection-string-kv'
-          keyVaultUrl: cosmosSecretName.properties.secretUri
+          keyVaultUrl: 'https://${keyVault.properties.vaultUri}/secrets/CosmosDbConnectionString'
           identity: 'system'
         }  
       ]
