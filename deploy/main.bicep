@@ -99,7 +99,16 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
     softDeleteRetentionInDays: 7
     enabledForTemplateDeployment: true
     accessPolicies: [
-      
+      {
+        objectId: containerApp.identity.principalId
+        tenantId: containerApp.identity.tenantId
+        permissions: {
+          secrets: [
+            'get'
+            'list'
+          ]
+        }
+      }
     ]
   }
 }
@@ -170,24 +179,5 @@ resource containerApp 'Microsoft.App/containerApps@2023-08-01-preview' = {
   }
   identity: {
     type: 'SystemAssigned'
-  }
-}
-
-resource accessPolicies 'Microsoft.KeyVault/vaults/accessPolicies@2023-07-01' = {
-  name: 'add'
-  parent: keyVault
-  properties: {
-    accessPolicies: [
-      {
-        objectId: containerApp.identity.principalId
-        tenantId: containerApp.identity.tenantId
-        permissions: {
-          secrets: [
-            'get'
-            'list'
-          ]
-        }
-      }
-    ] 
   }
 }
