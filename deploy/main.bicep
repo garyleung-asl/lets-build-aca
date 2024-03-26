@@ -44,6 +44,19 @@ module cosmosDb 'modules/cosmosDb.bicep' = {
   }
 }
 
+module containerApp 'modules/containerApp.bicep' = {
+  name: 'app'
+  params: {
+    appInsightsName: appInsightsName
+    containerAppEnvName: containerAppEnvName
+    containerRegistryName: containerRegistryName
+    cosmosDbAccountName: cosmosDb.outputs.cosmosDbName
+    keyVaultName: keyVault.outputs.keyVaultName
+    location: location
+    tags: tags
+  }
+}
+
 resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
   name: logAnalyticsWorkspaceName
   tags: tags
