@@ -74,6 +74,14 @@ resource containerApp 'Microsoft.App/containerApps@2023-08-01-preview' = {
           value: cosmosDbAccount.listConnectionStrings().connectionStrings[0].connectionString
         }
         {
+          name: 'app-insights-key'
+          value: appInsights.properties.InstrumentationKey
+        }
+        {
+          name: 'app-insights-connection-string'
+          value: appInsights.properties.ConnectionString
+        }
+        {
           name: 'cosmos-db-connection-string-kv'
           keyVaultUrl: 'https://${keyVault.name}.vault.azure.net/secrets/CosmosDbConnectionString/cb665c0332104b90b9d82e48d5ea7cc1'
           identity: 'system'
@@ -89,15 +97,19 @@ resource containerApp 'Microsoft.App/containerApps@2023-08-01-preview' = {
           env: [
             {
               name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
-              value: appInsights.properties.InstrumentationKey
+              secretRef: 'app-insights-key'
             }
             {
               name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-              value: appInsights.properties.ConnectionString
+              secretRef: 'app-insights-connection-string'
             }
             {
               name: 'COSMOS_DB_CONNECTION_STRING'
               secretRef: 'cosmos-db-connection-string'
+            }
+            {
+              name: 'COSMOS_DB_CONNECTION_KV'
+              secretRef: 'cosmos-db-connection-string-kv'
             }
           ]
           resources: {
