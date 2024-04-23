@@ -75,6 +75,9 @@ module helloWorld 'br/public:avm/res/app/container-app:0.2.0' = {
     name: containerAppName
     tags: tags
     activeRevisionsMode: 'Multiple'
+    ingressTargetPort: 80
+    ingressExternal: true
+    ingressTransport: 'http'
     location: location
     scaleMinReplicas: 0
     scaleMaxReplicas: 3
@@ -91,7 +94,6 @@ module helloWorld 'br/public:avm/res/app/container-app:0.2.0' = {
     managedIdentities: {
       systemAssigned: true
     }
-    exposedPort: 80
   }
 }
 
