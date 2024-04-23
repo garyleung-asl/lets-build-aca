@@ -24,6 +24,7 @@ var tags = {
   owner: 'Will Velida'
   application: 'lets-build-aca'
 }
+var containerAppName = 'hello-world'
 
 module keyVault 'modules/keyVault.bicep' = {
   name: 'kv'
@@ -54,6 +55,43 @@ module containerApp 'modules/containerApp.bicep' = {
     keyVaultName: keyVault.outputs.keyVaultName
     location: location
     tags: tags
+  }
+}
+
+module helloWorld 'br/public:avm/res/app/container-app:0.2.0' = {
+  name: 'helloWorldApp'
+  params: {
+    containers: [
+      {
+        image: 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
+        name: containerAppName
+        resources: {
+          cpu: json('1.0')
+          memory: '2Gi'
+        }
+      }
+    ]
+    environmentId: containerAppEnv.outputs.resourceId
+    name: containerAppName
+    tags: tags
+    activeRevisionsMode: 'Multiple'
+    location: location
+    scaleMinReplicas: 0
+    scaleMaxReplicas: 3
+    scaleRules: [
+      {
+        name: 'http-rule'
+        http: {
+          metadata: {
+            concurrentRequests: '100'
+          }
+        }
+      }
+    ]
+    managedIdentities: {
+      systemAssigned: true
+    }
+    exposedPort: 80
   }
 }
 
@@ -93,17 +131,12 @@ resource acr 'Microsoft.ContainerRegistry/registries@2023-11-01-preview' = {
   }
 }
 
-resource env 'Microsoft.App/managedEnvironments@2023-08-01-preview' = {
+module containerAppEnv 'br/public:avm/res/app/managed-environment:0.4.4' = {
   name: containerAppEnvName
-  tags: tags
-  location: location
-  properties: {
-    appLogsConfiguration: {
-      destination: 'log-analytics'
-      logAnalyticsConfiguration: {
-        customerId: logAnalytics.properties.customerId
-        sharedKey: logAnalytics.listKeys().primarySharedKey
-      }
-    }
+  params: {
+    logAnalyticsWorkspaceResourceId: logAnalytics.id
+    name: containerAppEnvName
+    tags: tags
+    logsDestination: 'log-analytics'
   }
 }
