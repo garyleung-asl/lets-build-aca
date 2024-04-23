@@ -24,7 +24,7 @@ var tags = {
   owner: 'Will Velida'
   application: 'lets-build-aca'
 }
-var containerAppName = 'hello-world'
+var containerAppName = 'hello-world-avm'
 
 module keyVault 'modules/keyVault.bicep' = {
   name: 'kv'
