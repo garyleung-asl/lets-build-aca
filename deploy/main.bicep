@@ -138,5 +138,6 @@ module containerAppEnv 'br/public:avm/res/app/managed-environment:0.4.4' = {
     name: containerAppEnvName
     tags: tags
     logsDestination: 'log-analytics'
+    zoneRedundant: false
   }
 }
