@@ -70,3 +70,21 @@ module env 'core/host/container-app-env.bicep' = {
     tags: tags
   }
 }
+
+module frontend 'apps/frontend-ui/frontend-ui.bicep' = {
+  name: 'ui'
+  params: {
+    containerAppEnvName: env.outputs.containerAppEnvName
+    location: location
+    tags: tags
+  }
+}
+
+module backend 'apps/backend-api/backend-api.bicep' = {
+  name: 'backend'
+  params: {
+    containerAppEnvName: env.outputs.containerAppEnvName
+    location: location
+    tags: tags
+  }
+}
