@@ -34,6 +34,9 @@ resource containerAppEnvironment 'Microsoft.App/managedEnvironments@2023-11-02-p
         sharedKey: logAnalytics.listKeys().primarySharedKey
       }
     }
+    appInsightsConfiguration: {
+      connectionString: appInsights.properties.ConnectionString
+    }
     openTelemetryConfiguration: {
       tracesConfiguration: {
         destinations: [
