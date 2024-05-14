@@ -22,7 +22,7 @@
                 foreach (var log in Model.WeightList)
                 {
                     <tr>
-                        <th>@log.MeasurementDate.ToString("dd-MM-yyyy")</th>
+                        <th><a asp-page="./Edit" asp-route-id="@log.WeightId">@log.MeasurementDate.ToString("dd-MM-yyyy")</a></th>
                         <th>@log.BMI</th>
                         <th>@log.Fat</th>
                         <th>@log.MeasurementSource</th>

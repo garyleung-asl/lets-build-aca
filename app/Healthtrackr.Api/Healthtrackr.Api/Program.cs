@@ -6,14 +6,14 @@ using OpenTelemetry.Trace;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Logging.AddOpenTelemetry();
-builder.Services.AddOpenTelemetry()
-    .UseAzureMonitor()
-    .WithTracing(tracing =>
-    {
-        tracing.AddAspNetCoreInstrumentation()
-               .AddHttpClientInstrumentation();
-    });
+//builder.Logging.AddOpenTelemetry();
+//builder.Services.AddOpenTelemetry()
+//    .UseAzureMonitor()
+//    .WithTracing(tracing =>
+//    {
+//        tracing.AddAspNetCoreInstrumentation()
+//               .AddHttpClientInstrumentation();
+//    });
 builder.Services.AddSingleton<IWeightManager, FakeWeightManager>();
 
 var app = builder.Build();
