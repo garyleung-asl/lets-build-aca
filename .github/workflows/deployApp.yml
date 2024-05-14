@@ -1,9 +1,12 @@
 # This is a basic workflow to help you get started with Actions
-name: Deploy Infra
+name: Deploy Application
 
 # Controls when the workflow will run
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - 'main'
 
 permissions:
   id-token: write
@@ -15,7 +18,7 @@ jobs:
       steps:
         - uses: actions/checkout@v4
         - name: Run Bicep Linter
-          run: az bicep build --file ./deploy/main.bicep
+          run: az bicep build --file ./infra/main.bicep
   
     validate:
       needs: lint
@@ -34,8 +37,8 @@ jobs:
           with:
             deploymentName: ${{ github.run_number }}
             resourceGroupName: ${{ secrets.AZURE_RG_NAME }}
-            template: ./deploy/main.bicep
-            parameters: ./deploy/parameters.prod.json
+            template: ./infra/main.bicep
+            parameters: ./infra/parameters.prod.json
             deploymentMode: Validate
   
     preview:
@@ -53,7 +56,7 @@ jobs:
           name: Run what-if
           with:
             inlineScript: |
-              az deployment group what-if --resource-group ${{ secrets.AZURE_RG_NAME }} --template-file ./deploy/main.bicep --parameters ./deploy/parameters.prod.json
+              az deployment group what-if --resource-group ${{ secrets.AZURE_RG_NAME }} --template-file ./infra/main.bicep --parameters ./infra/parameters.prod.json
 
   
     deploy:
@@ -73,6 +76,6 @@ jobs:
           uses: azure/arm-deploy@v1
           with:
             resourceGroupName: ${{ secrets.AZURE_RG_NAME }}
-            template: ./deploy/main.bicep
-            parameters: ./deploy/parameters.prod.json
+            template: ./infra/main.bicep
+            parameters: ./infra/parameters.prod.json
             failOnStdErr: false
