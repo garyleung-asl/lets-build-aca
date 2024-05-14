@@ -42,7 +42,7 @@ resource backendApi 'Microsoft.App/containerApps@2023-11-02-preview' = {
       activeRevisionsMode: 'Multiple'
       ingress: {
         external: true
-        targetPort: 80
+        targetPort: 8080
         transport: 'http'
       }
       registries: [
