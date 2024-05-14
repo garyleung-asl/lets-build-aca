@@ -76,6 +76,7 @@ module frontend 'apps/frontend-ui/frontend-ui.bicep' = {
   params: {
     containerAppEnvName: env.outputs.containerAppEnvName
     containerRegistryName: containerRegistry.outputs.name
+    keyVaultName: keyVault.outputs.name
     location: location
     tags: tags
   }
@@ -86,6 +87,7 @@ module backend 'apps/backend-api/backend-api.bicep' = {
   params: {
     containerAppEnvName: env.outputs.containerAppEnvName
     containerRegistryName: containerRegistry.outputs.name
+    keyVaultName: keyVault.outputs.name
     location: location
     tags: tags
   }
