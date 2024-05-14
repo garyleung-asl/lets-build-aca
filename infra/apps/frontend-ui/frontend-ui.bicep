@@ -4,16 +4,24 @@ param location string
 @description('The Container App environment that the Container App will be deployed to')
 param containerAppEnvName string
 
+@description('The name of the Container Registry that this Container App pull images')
+param containerRegistryName string
+
 @description('The tags that will be applied to the Frontend UI')
 param tags object
 
 var containerAppName = 'healthtrackr-ui'
+var acrPullRoleId = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')
 
 resource env 'Microsoft.App/managedEnvironments@2023-11-02-preview' existing = {
   name: containerAppEnvName
 }
 
-resource backendApi 'Microsoft.App/containerApps@2024-03-01' = {
+resource containerRegistry 'Microsoft.ContainerRegistry/registries@2023-11-01-preview' existing = {
+  name: containerRegistryName
+}
+
+resource frontend 'Microsoft.App/containerApps@2023-11-02-preview' = {
   name: containerAppName
   location: location
   tags: tags
@@ -49,5 +57,15 @@ resource backendApi 'Microsoft.App/containerApps@2024-03-01' = {
   }
   identity: {
     type: 'SystemAssigned'
+  }
+}
+
+resource acrPullRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(containerRegistry.id, frontend.id, acrPullRoleId)
+  scope: containerRegistry
+  properties: {
+    principalId: frontend.identity.principalId
+    roleDefinitionId: acrPullRoleId
+    principalType: 'ServicePrincipal'
   }
 }
