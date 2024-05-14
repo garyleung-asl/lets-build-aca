@@ -17,7 +17,7 @@ RUN dotnet build "./Healthtrackr.Api.csproj" -c $BUILD_CONFIGURATION -o /app/bui
 
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./Healthtrackr.Api.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false /p:PublishProfile=DefaultContainer
+RUN dotnet publish "./Healthtrackr.Api.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:PublishProfile=DefaultContainer
 
 FROM base AS final
 WORKDIR /app
