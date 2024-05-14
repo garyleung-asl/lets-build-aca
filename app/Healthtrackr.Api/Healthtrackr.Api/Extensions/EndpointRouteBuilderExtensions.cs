@@ -6,7 +6,7 @@ namespace Healthtrackr.Api.Extensions
     {
         public static void RegisterWeightEndpoints(this IEndpointRouteBuilder endpoints)
         {
-            var weightEndpoints = endpoints.MapGroup("api/weights");
+            var weightEndpoints = endpoints.MapGroup("api/weight");
 
             weightEndpoints.MapGet("", WeightHandlers.GetWeights)
                 .WithName("GetWeights");

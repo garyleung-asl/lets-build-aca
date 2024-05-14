@@ -26,12 +26,26 @@ resource containerAppEnvironment 'Microsoft.App/managedEnvironments@2023-11-02-p
   location: location
   tags: tags
   properties: {
-    daprAIConnectionString: appInsights.properties.ConnectionString
     appLogsConfiguration: {
       destination: 'log-analytics'
       logAnalyticsConfiguration: {
         customerId: logAnalytics.properties.customerId
         sharedKey: logAnalytics.listKeys().primarySharedKey
+      }
+    }
+    appInsightsConfiguration: {
+      connectionString: appInsights.properties.ConnectionString
+    }
+    openTelemetryConfiguration: {
+      tracesConfiguration: {
+        destinations: [
+          'appInsights'
+        ]
+      }
+      logsConfiguration: {
+        destinations: [
+          'appInsights'
+        ]
       }
     }
   }
