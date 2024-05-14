@@ -13,8 +13,93 @@ permissions:
   contents: read
 
 jobs:
+    build-api-container-image:
+      runs-on: ubuntu-latest
+      defaults:
+        run:
+          working-directory: './app/Healthtrackr.Api'
+      steps:
+        - name: 'Checkout GitHub Action'
+          uses: actions/checkout@main
+        
+        - name: 'Login via Azure CLI'
+          uses: azure/login@v1
+          with:
+            client-id: ${{ secrets.AZURE_CLIENT_ID }}
+            tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+            subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+        - name: Get ACR name
+          id: getacrname
+          run: |
+            acrName=$(az acr list --resource-group ${{secrets.AZURE_RG_NAME}} --query "[0].name" -o tsv)
+            echo "acrName=$acrName" >> $GITHUB_OUTPUT  
+          
+        - name: Get ACR Credentials
+          id: getacrcreds
+          run: |
+            loginServer=$(az acr list --resource-group ${{ secrets.AZURE_RG_NAME }} --query "[0].loginServer" -o tsv)
+            loginName=$(az acr credential show -n ${{ steps.getacrname.outputs.acrName }} --resource-group ${{ secrets.AZURE_RG_NAME }} --query username -o tsv)
+            password=$(az acr credential show -n ${{ steps.getacrname.outputs.acrName }} --resource-group ${{ secrets.AZURE_RG_NAME }} --query "passwords[0].value" -o tsv)
+            echo "loginServer=$loginServer" >> $GITHUB_OUTPUT
+            echo "loginName=$loginName" >> $GITHUB_OUTPUT
+            echo "password=$password" >> $GITHUB_OUTPUT
+
+        - name: 'Build and Push API Image to ACR'
+          uses: azure/docker-login@v1
+          with:
+            login-server: ${{ steps.getacrcreds.outputs.loginServer }}
+            username: ${{ steps.getacrname.outputs.acrName }}
+            password: ${{ steps.getacrcreds.outputs.password }}
+        - run: |
+            docker build . -t ${{ steps.getacrcreds.outputs.loginServer }}/healthtrackr-api:${{ github.sha }}
+            docker push ${{ steps.getacrcreds.outputs.loginServer }}/healthtrackr-api:${{ github.sha }}
+
+    build-ui-container-image:
+      runs-on: ubuntu-latest
+      defaults:
+        run:
+          working-directory: './app/Healthtrackr.Web'
+      steps:
+        - name: 'Checkout GitHub Action'
+          uses: actions/checkout@main
+            
+        - name: 'Login via Azure CLI'
+          uses: azure/login@v1
+          with:
+            client-id: ${{ secrets.AZURE_CLIENT_ID }}
+            tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+            subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+    
+        - name: Get ACR name
+          id: getacrname
+          run: |
+              acrName=$(az acr list --resource-group ${{secrets.AZURE_RG_NAME}} --query "[0].name" -o tsv)
+              echo "acrName=$acrName" >> $GITHUB_OUTPUT  
+              
+        - name: Get ACR Credentials
+          id: getacrcreds
+          run: |
+            loginServer=$(az acr list --resource-group ${{ secrets.AZURE_RG_NAME }} --query "[0].loginServer" -o tsv)
+            loginName=$(az acr credential show -n ${{ steps.getacrname.outputs.acrName }} --resource-group ${{ secrets.AZURE_RG_NAME }} --query username -o tsv)
+            password=$(az acr credential show -n ${{ steps.getacrname.outputs.acrName }} --resource-group ${{ secrets.AZURE_RG_NAME }} --query "passwords[0].value" -o tsv)
+            echo "loginServer=$loginServer" >> $GITHUB_OUTPUT
+            echo "loginName=$loginName" >> $GITHUB_OUTPUT
+            echo "password=$password" >> $GITHUB_OUTPUT
+    
+        - name: 'Build and Push API Image to ACR'
+          uses: azure/docker-login@v1
+          with:
+            login-server: ${{ steps.getacrcreds.outputs.loginServer }}
+            username: ${{ steps.getacrname.outputs.acrName }}
+            password: ${{ steps.getacrcreds.outputs.password }}
+        - run: |
+            docker build . -t ${{ steps.getacrcreds.outputs.loginServer }}/healthtrackr-ui:${{ github.sha }}
+            docker push ${{ steps.getacrcreds.outputs.loginServer }}/healthtrackr-ui:${{ github.sha }}
+
     lint:
       runs-on: ubuntu-latest
+      needs: [build-ui-container-image, build-api-container-image]
       steps:
         - uses: actions/checkout@v4
         - name: Run Bicep Linter
@@ -31,6 +116,12 @@ jobs:
             client-id: ${{ secrets.AZURE_CLIENT_ID }}
             tenant-id: ${{ secrets.AZURE_TENANT_ID }}
             subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+        - name: Get ACR Login Server
+          id: getacrserver
+          run: |
+            loginServer=$(az acr list --resource-group ${{ secrets.AZURE_RG_NAME }} --query "[0].loginServer" -o tsv)
+            echo "loginServer=$loginServer" >> $GITHUB_OUTPUT
         
         - uses: azure/arm-deploy@v1
           name: Run preflight validation
@@ -38,7 +129,7 @@ jobs:
             deploymentName: ${{ github.run_number }}
             resourceGroupName: ${{ secrets.AZURE_RG_NAME }}
             template: ./infra/main.bicep
-            parameters: ./infra/parameters.prod.json
+            parameters: ./infra/parameters.prod.json backendApiImage=${{ steps.getacrserver.outputs.loginServer }}/healthtrackr-api:${{ github.sha }} frontendUIImage=${{ steps.getacrserver.outputs.loginServer }}/healthtrackr-ui:${{ github.sha }}
             deploymentMode: Validate
   
     preview:
@@ -52,11 +143,18 @@ jobs:
             client-id: ${{ secrets.AZURE_CLIENT_ID }}
             tenant-id: ${{ secrets.AZURE_TENANT_ID }}
             subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+        - name: Get ACR Login Server
+          id: getacrserver
+          run: |
+            loginServer=$(az acr list --resource-group ${{ secrets.AZURE_RG_NAME }} --query "[0].loginServer" -o tsv)
+            echo "loginServer=$loginServer" >> $GITHUB_OUTPUT
+
         - uses: Azure/cli@v1
           name: Run what-if
           with:
             inlineScript: |
-              az deployment group what-if --resource-group ${{ secrets.AZURE_RG_NAME }} --template-file ./infra/main.bicep --parameters ./infra/parameters.prod.json
+              az deployment group what-if --resource-group ${{ secrets.AZURE_RG_NAME }} --template-file ./infra/main.bicep --parameters ./infra/parameters.prod.json backendApiImage=${{ steps.getacrserver.outputs.loginServer }}/healthtrackr-api:${{ github.sha }} frontendUIImage=${{ steps.getacrserver.outputs.loginServer }}/healthtrackr-ui:${{ github.sha }}
 
   
     deploy:
@@ -71,11 +169,17 @@ jobs:
             client-id: ${{ secrets.AZURE_CLIENT_ID }}
             tenant-id: ${{ secrets.AZURE_TENANT_ID }}
             subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+        - name: Get ACR Login Server
+          id: getacrserver
+          run: |
+            loginServer=$(az acr list --resource-group ${{ secrets.AZURE_RG_NAME }} --query "[0].loginServer" -o tsv)
+            echo "loginServer=$loginServer" >> $GITHUB_OUTPUT
           
         - name: Deploy Bicep File
           uses: azure/arm-deploy@v1
           with:
             resourceGroupName: ${{ secrets.AZURE_RG_NAME }}
             template: ./infra/main.bicep
-            parameters: ./infra/parameters.prod.json
+            parameters: ./infra/parameters.prod.json backendApiImage=${{ steps.getacrserver.outputs.loginServer }}/healthtrackr-api:${{ github.sha }} frontendUIImage=${{ steps.getacrserver.outputs.loginServer }}/healthtrackr-ui:${{ github.sha }}
             failOnStdErr: false

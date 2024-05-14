@@ -10,6 +10,12 @@ param containerRegistryName string
 @description('The name of the Key Vault that this Container App will pull secrets from')
 param keyVaultName string
 
+@description('The container image that this Container App will use')
+param imageName string
+
+@description('The Backend API FQDN that this Frontend will communicate with')
+param backendFqdn string
+
 @description('The tags that will be applied to the Frontend UI')
 param tags object
 
@@ -66,7 +72,7 @@ resource frontend 'Microsoft.App/containerApps@2023-11-02-preview' = {
       containers: [
         {
           name: containerAppName
-          image: 'mcr.microsoft.com/k8se/quickstart:latest'
+          image: imageName
           env: [
             {
               name: 'ASPNETCORE_ENVIRONMENT'
@@ -79,6 +85,10 @@ resource frontend 'Microsoft.App/containerApps@2023-11-02-preview' = {
             {
               name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
               secretRef: 'app-insights-connection-string'
+            }
+            {
+              name: 'BackendApi'
+              value: 'https://${backendFqdn}'
             }
           ]
           resources: {

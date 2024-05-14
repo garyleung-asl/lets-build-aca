@@ -10,6 +10,9 @@ param containerRegistryName string
 @description('The name of the Key Vault that this Container App will pull secrets from')
 param keyVaultName string
 
+@description('The container image that this Container App will use')
+param imageName string
+
 @description('The tags that will be applied to the Backend API')
 param tags object
 
@@ -66,7 +69,7 @@ resource backendApi 'Microsoft.App/containerApps@2023-11-02-preview' = {
       containers: [
         {
           name: containerAppName
-          image: 'mcr.microsoft.com/k8se/quickstart:latest'
+          image: imageName
           env: [
             {
               name: 'ASPNETCORE_ENVIRONMENT'
@@ -117,3 +120,6 @@ resource keyVaultSecretUserRoleAssignment 'Microsoft.Authorization/roleAssignmen
     principalType: 'ServicePrincipal'
   }
 }
+
+@description('The FQDN for the Backend API')
+output fqdn string = backendApi.properties.configuration.ingress.fqdn

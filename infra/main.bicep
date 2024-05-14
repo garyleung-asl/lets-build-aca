@@ -16,6 +16,12 @@ param containerRegistryName string
 @description('The name of the Key Vault')
 param keyVaultName string
 
+@description('The container image used by the Backend API')
+param backendApiImage string
+
+@description('The container image used by the Frontend UI')
+param frontendUIImage string
+
 var tags = {
   environment: 'production'
   owner: 'Will Velida'
@@ -71,17 +77,6 @@ module env 'core/host/container-app-env.bicep' = {
   }
 }
 
-module frontend 'apps/frontend-ui/frontend-ui.bicep' = {
-  name: 'ui'
-  params: {
-    containerAppEnvName: env.outputs.containerAppEnvName
-    containerRegistryName: containerRegistry.outputs.name
-    keyVaultName: keyVault.outputs.name
-    location: location
-    tags: tags
-  }
-}
-
 module backend 'apps/backend-api/backend-api.bicep' = {
   name: 'backend'
   params: {
@@ -90,5 +85,21 @@ module backend 'apps/backend-api/backend-api.bicep' = {
     keyVaultName: keyVault.outputs.name
     location: location
     tags: tags
+    imageName: backendApiImage
   }
 }
+
+module frontend 'apps/frontend-ui/frontend-ui.bicep' = {
+  name: 'ui'
+  params: {
+    containerAppEnvName: env.outputs.containerAppEnvName
+    containerRegistryName: containerRegistry.outputs.name
+    keyVaultName: keyVault.outputs.name
+    location: location
+    tags: tags
+    imageName: frontendUIImage
+    backendFqdn: backend.outputs.fqdn
+  }
+}
+
+
