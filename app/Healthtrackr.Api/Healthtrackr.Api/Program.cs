@@ -6,7 +6,11 @@ using OpenTelemetry.Trace;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Logging.AddOpenTelemetry();
+builder.Logging.AddOpenTelemetry(x =>
+{
+    x.IncludeScopes = true;
+    x.IncludeFormattedMessage = true;
+});
 builder.Services.AddOpenTelemetry()
     .UseAzureMonitor()
     .WithTracing(tracing =>
