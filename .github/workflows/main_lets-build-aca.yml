@@ -23,7 +23,7 @@ jobs:
         with:
           dotnet-version: '8.x'
 
-      - name: Build with dotnet
+      - name: Build with dotnet (updated)
         run: dotnet build --configuration Release
         working-directory: "${{env.DOTNET_ROOT}}/app/Healthtrackr.Web"
 
